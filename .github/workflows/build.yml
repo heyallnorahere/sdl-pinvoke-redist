@@ -45,7 +45,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: program
-          path: program.zip
       - name: build sdl
         shell: bash
         run: |
@@ -68,7 +67,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: program
-          path: program.zip
       - name: echo outputs
         shell: bash
         run: |
