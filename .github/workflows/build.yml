@@ -1,0 +1,23 @@
+name: build
+on: [ push ]
+jobs:
+  builder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.x.x
+      - name: build
+        shell: bash
+        run: |
+          dotnet restore
+          dotnet build -c Release
+          zip -r program.zip SDLPackageBuilder/bin/Release/net7.0
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: program
+          path: program.zip
