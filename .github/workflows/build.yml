@@ -21,3 +21,55 @@ jobs:
         with:
           name: program
           path: program.zip
+  sdl-artifacts:
+    runs-on: ${{ matrix.os-name }}-latest
+    needs: builder
+    strategy:
+      matrix:
+        os-name:
+          - windows
+          - ubuntu
+          - macos
+    outputs:
+      artifact-name: artifact-${{ matrix.os-name }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.x.x
+      - name: download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: program
+          path: program.zip
+      - name: build sdl
+        shell: bash
+        run: |
+          unzip program.zip
+          dotnet SDLPackageBuilder/bin/Release/net7.0/SDLPackageBuilder.dll CompileArtifact
+      - name: upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifact-${{ matrix.os-name }}
+          path: artifacts/artifact-*.zip
+  publish-package:
+    runs-on: ubuntu-latest
+    needs: sdl-artifacts
+    steps:
+      - name: setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.x.x
+      - name: download program
+        uses: actions/download-artifact@v3
+        with:
+          name: program
+          path: program.zip
+      - name: echo outputs
+        shell: bash
+        run: |
+          echo ${{ needs.sdl-artifacts.outputs.artifact-name }}
