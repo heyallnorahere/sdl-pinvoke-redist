@@ -7,13 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <SpecFiles Include="$(ProjectDir)Resources\*.json" />
-    <Content Remove="@(SpecFiles)" />
-    <EmbeddedResource Include="@(SpecFiles)" />
+    <ResourceFiles Include="$(ProjectDir)Resources\*" />
+    <Content Remove="@(ResourceFiles)" />
+    <EmbeddedResource Include="@(ResourceFiles)" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="NuGet.Packaging" Version="6.4.0" />
+    <PackageReference Include="NuGet.Protocol" Version="6.4.0" />
   </ItemGroup>
 
 </Project>

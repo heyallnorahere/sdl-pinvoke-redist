@@ -14,8 +14,11 @@
    limitations under the License.
 */
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -35,6 +38,27 @@ namespace SDLPackageBuilder
 
     public static class Program
     {
+        public const string VersionFileName = "version.txt";
+
+        public static string ArtifactsDirectory => Path.Join(Environment.CurrentDirectory, "artifacts");
+        public static JsonSerializerSettings JsonSettings { get; }
+
+        static Program()
+        {
+            JsonSettings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Include,
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                ContractResolver = new DefaultContractResolver
+                {
+                    NamingStrategy = new CamelCaseNamingStrategy
+                    {
+                        OverrideSpecifiedNames = false
+                    }
+                }
+            };
+        }
+
         private static IReadOnlyDictionary<string, ConstructorInfo> FindRegisteredCommands()
         {
             var assembly = Assembly.GetExecutingAssembly();

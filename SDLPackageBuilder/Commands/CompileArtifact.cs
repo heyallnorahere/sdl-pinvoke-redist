@@ -15,7 +15,6 @@
 */
 
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,23 +37,9 @@ namespace SDLPackageBuilder.Commands
     [RegisteredCommand]
     internal sealed class CompileArtifact : ICommand
     {
-        private static readonly JsonSerializerSettings sJsonSettings;
         private static readonly IReadOnlyDictionary<string, string> sCMakeOptions;
         static CompileArtifact()
         {
-            sJsonSettings = new JsonSerializerSettings
-            {
-                NullValueHandling = NullValueHandling.Include,
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-                ContractResolver = new DefaultContractResolver
-                {
-                    NamingStrategy = new CamelCaseNamingStrategy
-                    {
-                        OverrideSpecifiedNames = false
-                    }
-                }
-            };
-
             sCMakeOptions = new Dictionary<string, string>
             {
                 ["SDL_STATIC"] = "OFF",
@@ -182,7 +167,7 @@ namespace SDLPackageBuilder.Commands
             using var reader = new StreamReader(stream, encoding: Encoding.UTF8, leaveOpen: true);
             var json = await reader.ReadToEndAsync();
 
-            var dependencies = JsonConvert.DeserializeObject<Dictionary<string, PlatformPackageSpec>>(json, sJsonSettings);
+            var dependencies = JsonConvert.DeserializeObject<Dictionary<string, PlatformPackageSpec>>(json, Program.JsonSettings);
             if (dependencies is null)
             {
                 throw new ArgumentException("Malformed JSON!");
@@ -317,7 +302,7 @@ namespace SDLPackageBuilder.Commands
 
             var cwd = Environment.CurrentDirectory;
             var sourceDir = Path.Join(cwd, "SDL");
-            var artifactsDir = Path.Join(cwd, "artifacts");
+            var artifactsDir = Program.ArtifactsDirectory;
             var buildDir = Path.Join(artifactsDir, "build");
             const string config = "Release";
 
@@ -346,7 +331,7 @@ namespace SDLPackageBuilder.Commands
             }
 
             using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
-            var entry = archive.CreateEntry("version.txt");
+            var entry = archive.CreateEntry(Program.VersionFileName);
             using (var versionStream = entry.Open())
             {
                 using var writer = new StreamWriter(versionStream, encoding: Encoding.UTF8, leaveOpen: true);
