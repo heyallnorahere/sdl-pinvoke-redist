@@ -69,8 +69,8 @@ jobs:
         shell: bash
         run: |
           mkdir artifacts
-          mv artifact-*.zip artifacts/
+          mv ./**/artifact-*.zip artifacts/
           
-          unzip program.zip
+          unzip program/program.zip
           dotnet SDLPackageBuilder/bin/Release/net7.0/SDLPackageBuilder.dll PublishPackage \
             "{\"url\":\"https://nuget.pkg.github.com/yodasoda1219/index.json\",\"username\":\"yodasoda1219\",\"password\":\"${{ secrets.GITHUB_TOKEN }}\"}"
