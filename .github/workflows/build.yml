@@ -64,10 +64,13 @@ jobs:
         with:
           dotnet-version: 7.x.x
       - name: download program
-        uses: actions/download-artifact@v3
-        with:
-          name: program
-      - name: echo outputs
+        uses: actions/download-artifact@v3 # no name provided, download all artifacts
+      - name: publish package
         shell: bash
         run: |
-          echo ${{ needs.sdl-artifacts.outputs.artifact-name }}
+          mkdir artifacts
+          mv artifact-*.zip artifacts/
+          
+          unzip program.zip
+          dotnet SDLPackageBuilder/bin/Release/net7.0/SDLPackageBuilder.dll PublishPackage \
+            "{\"url\":\"https://nuget.pkg.github.com/yodasoda1219/index.json\",\"username\":\"yodasoda1219\",\"password\":\"${{ secrets.GITHUB_TOKEN }}\"}"
