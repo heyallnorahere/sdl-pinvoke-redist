@@ -151,7 +151,7 @@ namespace SDLPackageBuilder.Commands
             }
 
             Console.WriteLine("Package built! Pushing package...");
-            if (await Program.RunCommandAsync($"dotnet nuget push \"{packagePath}\" -s \"{args[0]}\"") != 0)
+            if (await Program.RunCommandAsync($"dotnet nuget push \"{packagePath}\" --source \"{args[0]}\"") != 0)
             {
                 return 1;
             }
