@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <ResourceFiles Include="$(ProjectDir)Resources\*" />
+    <ResourceFiles Include="..\README.md" />
+
     <Content Remove="@(ResourceFiles)" />
     <EmbeddedResource Include="@(ResourceFiles)" />
   </ItemGroup>

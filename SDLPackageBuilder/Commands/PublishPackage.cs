@@ -111,7 +111,7 @@ namespace SDLPackageBuilder.Commands
         private static async Task PushPackageAsync(string packagePath, string source)
         {
             var sourceConfig = JsonConvert.DeserializeObject<PackageSourceSettings>(source, Program.JsonSettings);
-            
+
             var nullMembers = string.Empty;
             var properties = sourceConfig.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
@@ -210,9 +210,33 @@ namespace SDLPackageBuilder.Commands
                 },
             };
 
+            var assembly = Assembly.GetExecutingAssembly();
+            using (var readmeStream = assembly.GetManifestResourceStream("SDLPackageBuilder.README.md"))
+            {
+                if (readmeStream is null)
+                {
+                    throw new FileNotFoundException("Unable to find README in manifest!");
+                }
+
+                string outputReadmePath = Path.Join(packageDir, "README.md");
+                using var outputReadmeStream = new FileStream(outputReadmePath, FileMode.Create);
+
+                var buffer = new byte[256];
+                while (true)
+                {
+                    int bytesRead = await readmeStream.ReadAsync(buffer, 0, buffer.Length);
+                    if (bytesRead <= 0)
+                    {
+                        break;
+                    }
+
+                    await outputReadmeStream.WriteAsync(buffer, 0, bytesRead);
+                }
+            }
+
             builder.Authors.Add("Nora Beda");
             builder.AddFiles(packageDir, "runtimes/**", "runtimes");
-            builder.AddFiles(Environment.CurrentDirectory, "README.md", string.Empty);
+            builder.AddFiles(packageDir, "README.md", string.Empty);
 
             string packageName = $"{builder.Id}.{version}.nupkg";
             string packagePath = Path.Join(artifactDir, packageName);
