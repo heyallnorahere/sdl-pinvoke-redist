@@ -74,4 +74,5 @@ jobs:
           unzip program/program.zip
           dotnet SDLPackageBuilder/bin/Release/net7.0/SDLPackageBuilder.dll CreatePackage
 
-          curl -vX PUT -u "yodasoda1219:${{ secrets.GITHUB_TOKEN }}" -F package=@artifacts/SDLPInvokeRedist.nupkg https://nuget.pkg.github.com/yodasoda1219/
+          dotnet nuget add source https://nuget.pkg.github.com/yodasoda1219/index.json --name github
+          dotnet nuget push artifacts/SDLPInvokeRedist.nupkg --source github --api-key ${{ secrets.GITHUB_TOKEN }}
