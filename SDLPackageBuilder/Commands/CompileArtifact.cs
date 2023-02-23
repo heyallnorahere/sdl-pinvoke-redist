@@ -275,7 +275,7 @@ namespace SDLPackageBuilder.Commands
                 await writer.WriteAsync(version.ToString());
             }
 
-            entry = archive.CreateEntry($"runtimes/{rid}/{GetSharedLibraryName(baseLibraryName)}");
+            entry = archive.CreateEntry($"runtimes/{rid}/native/{GetSharedLibraryName(baseLibraryName)}");
             using (var libraryStream = entry.Open())
             {
                 using var input = new FileStream(libraryPath, FileMode.Open);
