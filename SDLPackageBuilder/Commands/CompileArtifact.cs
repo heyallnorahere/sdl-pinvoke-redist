@@ -89,69 +89,6 @@ namespace SDLPackageBuilder.Commands
             }
         }
 
-        private static async Task RelayTextAsync(TextReader input, params Action<string>[] callbacks)
-        {
-            while (true)
-            {
-                var line = await input.ReadLineAsync();
-                if (line is null)
-                {
-                    return;
-                }
-
-                foreach (var callback in callbacks)
-                {
-                    callback.Invoke(line);
-                }
-            }
-        }
-
-        private static async Task<int> RunCommandAsync(string command, string? cwd = null, Action<string>? onLine = null, bool dryRun = false)
-        {
-            Console.WriteLine($">{command}");
-            if (dryRun)
-            {
-                return 0;
-            }
-
-            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = isWindows ? "cmd.exe" : "/bin/bash",
-                    UseShellExecute = false,
-                    WorkingDirectory = cwd ?? Environment.CurrentDirectory,
-                    RedirectStandardOutput = onLine != null,
-                    RedirectStandardError = onLine != null
-                }
-            };
-
-            process.StartInfo.ArgumentList.Add(isWindows ? "/c" : "-c");
-            process.StartInfo.ArgumentList.Add(command);
-            process.Start();
-
-            var tasks = new List<Task>();
-            if (onLine != null)
-            {
-                var readers = new TextReader[]
-                {
-                    process.StandardOutput,
-                    process.StandardError
-                };
-
-                foreach (var reader in readers)
-                {
-                    tasks.Add(Task.Run(async () => await RelayTextAsync(reader, Console.WriteLine, onLine)));
-                }
-            }
-
-            tasks.Add(process.WaitForExitAsync());
-            await Task.WhenAll(tasks);
-
-            return process.ExitCode;
-        }
-
         private static async Task<bool> InstallPlatformDependenciesAsync()
         {
             const string specFileId = "SDLPackageBuilder.Resources.dependencies.json";
@@ -206,7 +143,7 @@ namespace SDLPackageBuilder.Commands
 
             if (!string.IsNullOrEmpty(spec.UpdateCommand))
             {
-                if (await RunCommandAsync(spec.UpdateCommand, dryRun: Debugger.IsAttached) != 0)
+                if (await Program.RunCommandAsync(spec.UpdateCommand, dryRun: Debugger.IsAttached) != 0)
                 {
                     return false;
                 }
@@ -218,7 +155,7 @@ namespace SDLPackageBuilder.Commands
                 installCommand += $" {packageId}";
             }
 
-            return await RunCommandAsync(installCommand, dryRun: Debugger.IsAttached) == 0;
+            return await Program.RunCommandAsync(installCommand, dryRun: Debugger.IsAttached) == 0;
         }
 
         private static async Task<Version?> BuildArtifactAsync(string sourceDir, string buildDir, string config)
@@ -242,7 +179,7 @@ namespace SDLPackageBuilder.Commands
             }
 
             Version? version = null;
-            int configureResult = await RunCommandAsync(cmakeCommand, onLine: line =>
+            int configureResult = await Program.RunCommandAsync(cmakeCommand, onLine: line =>
             {
                 if (version != null)
                 {
@@ -285,7 +222,7 @@ namespace SDLPackageBuilder.Commands
             }
 
             string buildCommand = $"cmake --build {buildDir} --config {config}";
-            if (await RunCommandAsync(buildCommand) != 0)
+            if (await Program.RunCommandAsync(buildCommand) != 0)
             {
                 return null;
             }

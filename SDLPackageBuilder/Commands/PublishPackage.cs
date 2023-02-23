@@ -247,9 +247,15 @@ namespace SDLPackageBuilder.Commands
             }
 
             Console.WriteLine("Package built! Pushing package...");
-            await PushPackageAsync(packagePath, args[0]);
-            Console.WriteLine("Successfully pushed package!");
+            //await PushPackageAsync(packagePath, args[0]);
 
+            // using command instead - nuget push function is finnicky
+            if (await Program.RunCommandAsync($"dotnet nuget push \"{packagePath}\"") != 0)
+            {
+                return 1;
+            }
+
+            Console.WriteLine("Successfully pushed package!");
             return 0;
         }
     }

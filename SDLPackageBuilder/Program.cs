@@ -18,9 +18,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace SDLPackageBuilder
@@ -107,6 +109,69 @@ namespace SDLPackageBuilder
 
             var instance = (ICommand)constructors[commandId].Invoke(null);
             return await instance.InvokeAsync(args[1..]);
+        }
+
+        private static async Task RelayTextAsync(TextReader input, params Action<string>[] callbacks)
+        {
+            while (true)
+            {
+                var line = await input.ReadLineAsync();
+                if (line is null)
+                {
+                    return;
+                }
+
+                foreach (var callback in callbacks)
+                {
+                    callback.Invoke(line);
+                }
+            }
+        }
+
+        public static async Task<int> RunCommandAsync(string command, string? cwd = null, Action<string>? onLine = null, bool dryRun = false)
+        {
+            Console.WriteLine($">{command}");
+            if (dryRun)
+            {
+                return 0;
+            }
+
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = isWindows ? "cmd.exe" : "/bin/bash",
+                    UseShellExecute = false,
+                    WorkingDirectory = cwd ?? Environment.CurrentDirectory,
+                    RedirectStandardOutput = onLine != null,
+                    RedirectStandardError = onLine != null
+                }
+            };
+
+            process.StartInfo.ArgumentList.Add(isWindows ? "/c" : "-c");
+            process.StartInfo.ArgumentList.Add(command);
+            process.Start();
+
+            var tasks = new List<Task>();
+            if (onLine != null)
+            {
+                var readers = new TextReader[]
+                {
+                    process.StandardOutput,
+                    process.StandardError
+                };
+
+                foreach (var reader in readers)
+                {
+                    tasks.Add(Task.Run(async () => await RelayTextAsync(reader, Console.WriteLine, onLine)));
+                }
+            }
+
+            tasks.Add(process.WaitForExitAsync());
+            await Task.WhenAll(tasks);
+
+            return process.ExitCode;
         }
     }
 }
