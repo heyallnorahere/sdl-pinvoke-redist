@@ -14,12 +14,8 @@
    limitations under the License.
 */
 
-using Newtonsoft.Json;
-using NuGet.Common;
-using NuGet.Configuration;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
-using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using System;
 using System.IO;
@@ -30,43 +26,6 @@ using System.Threading.Tasks;
 
 namespace SDLPackageBuilder.Commands
 {
-    internal struct PackageSourceSettings
-    {
-        public string? Url { get; set; }
-        public string? Username { get; set; }
-        public string? Password { get; set; }
-    }
-
-    internal sealed class PackageBuilderLogger : ILogger
-    {
-        public void LogDebug(string message) => Log(LogLevel.Debug, message);
-        public void LogVerbose(string message) => Log(LogLevel.Verbose, message);
-        public void LogInformation(string message) => Log(LogLevel.Information, message);
-        public void LogMinimal(string message) => Log(LogLevel.Minimal, message);
-        public void LogWarning(string message) => Log(LogLevel.Warning, message);
-        public void LogError(string message) => Log(LogLevel.Error, message);
-        public void LogInformationSummary(string message)
-        {
-            // what?
-            Console.WriteLine($"NuGet: InformationSummary: {message}");
-        }
-
-        public void Log(LogLevel level, string message)
-        {
-            Console.WriteLine(GetLogMessage(level, message));
-        }
-
-        public async Task LogAsync(LogLevel level, string message)
-        {
-            await Console.Out.WriteLineAsync(GetLogMessage(level, message));
-        }
-
-        public void Log(ILogMessage message) => Log(message.Level, message.Message);
-        public async Task LogAsync(ILogMessage message) => await LogAsync(message.Level, message.Message);
-
-        private static string GetLogMessage(LogLevel level, string message) => $"NuGet: {level}: {message}";
-    }
-
     [RegisteredCommand]
     internal sealed class PublishPackage : ICommand
     {
@@ -106,61 +65,6 @@ namespace SDLPackageBuilder.Commands
             }
 
             return artifacts.Length;
-        }
-
-        private static async Task PushPackageAsync(string packagePath, string source)
-        {
-            var sourceConfig = JsonConvert.DeserializeObject<PackageSourceSettings>(source, Program.JsonSettings);
-
-            var nullMembers = string.Empty;
-            var properties = sourceConfig.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-            // i have zero fucks left to give at this point
-            foreach (var property in properties)
-            {
-                var value = property.GetValue(sourceConfig);
-                if (value is null)
-                {
-                    if (nullMembers.Length > 0)
-                    {
-                        nullMembers += " ";
-                    }
-
-                    nullMembers += property.Name;
-                }
-            }
-
-            if (nullMembers.Length > 0)
-            {
-                throw new ArgumentException($"Null package source config members: {nullMembers}");
-            }
-
-            var packageSource = new PackageSource(sourceConfig.Url!)
-            {
-                Credentials = new PackageSourceCredential(
-                    source: sourceConfig.Url!,
-                    username: sourceConfig.Username!,
-                    passwordText: sourceConfig.Password!,
-                    isPasswordClearText: true,
-                    validAuthenticationTypesText: null
-                )
-            };
-
-            var repository = Repository.CreateSource(Repository.Provider.GetCoreV3(), packageSource);
-            var resource = await repository.GetResourceAsync<PackageUpdateResource>();
-
-            await resource.Push(
-                packagePaths: new string[] { packagePath },
-                symbolSource: null,
-                timeoutInSecond: 5 * 60, // 5 minutes
-                disableBuffering: false,
-                getApiKey: uri => packageSource.Credentials.Password,
-                getSymbolApiKey: uri => null,
-                noServiceEndpoint: false,
-                skipDuplicate: false,
-                symbolPackageUpdateResource: null,
-                log: new PackageBuilderLogger()
-            );
         }
 
         public async Task<int> InvokeAsync(string[] args)
@@ -247,10 +151,7 @@ namespace SDLPackageBuilder.Commands
             }
 
             Console.WriteLine("Package built! Pushing package...");
-            //await PushPackageAsync(packagePath, args[0]);
-
-            // using command instead - nuget push function is finnicky
-            if (await Program.RunCommandAsync($"dotnet nuget push \"{packagePath}\"") != 0)
+            if (await Program.RunCommandAsync($"dotnet nuget push \"{packagePath}\" -s \"{args[0]}\"") != 0)
             {
                 return 1;
             }
