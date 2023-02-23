@@ -72,5 +72,6 @@ jobs:
           mv ./**/artifact-*.zip artifacts/
           
           unzip program/program.zip
-          dotnet nuget add source --username yodasoda1219 --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/yodasoda1219/index.json"
-          dotnet SDLPackageBuilder/bin/Release/net7.0/SDLPackageBuilder.dll PublishPackage github
+          dotnet SDLPackageBuilder/bin/Release/net7.0/SDLPackageBuilder.dll CreatePackage
+
+          curl -vX PUT -u "yodasoda1219:${{ secrets.GITHUB_TOKEN }}" -F package=@artifacts/SDLPInvokeRedist.nupkg https://nuget.pkg.github.com/yodasoda1219/index.json

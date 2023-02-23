@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 namespace SDLPackageBuilder.Commands
 {
     [RegisteredCommand]
-    internal sealed class PublishPackage : ICommand
+    internal sealed class CreatePackage : ICommand
     {
         private static async Task<int> ExtractArtifactsAsync(string artifactsDir, string outputDir)
         {
@@ -69,11 +69,6 @@ namespace SDLPackageBuilder.Commands
 
         public async Task<int> InvokeAsync(string[] args)
         {
-            if (args.Length < 1)
-            {
-                throw new ArgumentException("No package source provided!");
-            }
-
             string artifactDir = Program.ArtifactsDirectory;
             string packageDir = Path.Join(artifactDir, "package");
 
@@ -142,7 +137,7 @@ namespace SDLPackageBuilder.Commands
             builder.AddFiles(packageDir, "runtimes/**", "runtimes");
             builder.AddFiles(packageDir, "README.md", string.Empty);
 
-            string packageName = $"{builder.Id}.{version}.nupkg";
+            string packageName = $"{builder.Id}.nupkg";
             string packagePath = Path.Join(artifactDir, packageName);
 
             using (var outputStream = new FileStream(packagePath, FileMode.Create))
@@ -150,13 +145,7 @@ namespace SDLPackageBuilder.Commands
                 builder.Save(outputStream);
             }
 
-            Console.WriteLine("Package built! Pushing package...");
-            if (await Program.RunCommandAsync($"dotnet nuget push \"{packagePath}\" --source \"{args[0]}\"") != 0)
-            {
-                return 1;
-            }
-
-            Console.WriteLine("Successfully pushed package!");
+            Console.WriteLine($"Successfully built package {packagePath}!");
             return 0;
         }
     }
