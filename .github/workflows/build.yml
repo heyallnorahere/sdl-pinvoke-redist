@@ -74,4 +74,4 @@ jobs:
           unzip program/program.zip
           dotnet SDLPackageBuilder/bin/Release/net7.0/SDLPackageBuilder.dll CreatePackage
 
-          curl -vX PUT -u "yodasoda1219:${{ secrets.GITHUB_TOKEN }}" -F package=@artifacts/SDLPInvokeRedist.nupkg https://nuget.pkg.github.com/yodasoda1219/index.json
+          curl -vX PUT -u "yodasoda1219:${{ secrets.GITHUB_TOKEN }}" -F package=@artifacts/SDLPInvokeRedist.nupkg https://nuget.pkg.github.com/yodasoda1219/
